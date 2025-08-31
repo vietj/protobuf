@@ -434,18 +434,120 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
 </head>
-<body class="article">
+<body class="article toc2 toc-left">
 <div id="header">
 <h1>Protobuf</h1>
+<div id="toc" class="toc2">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_basic_usage">Basic usage</a>
+<ul class="sectlevel2">
+<li><a href="#_creating_a_message">Creating a message</a></li>
+<li><a href="#_writing_a_message_to_the_protobuf_format">Writing a message to the Protobuf format</a></li>
+<li><a href="#_read_a_message_to_the_protobuf_format">Read a message to the Protobuf format</a></li>
+<li><a href="#_writing_a_message_to_the_protojson_format">Writing a message to the ProtoJSON format</a></li>
+<li><a href="#_read_a_message_to_the_protobprotojsonuf_format">Read a message to the ProtobProtoJSONuf format</a></li>
+</ul>
+</li>
+</ul>
+</div>
 </div>
 <div id="content">
+<div id="preamble">
+<div class="sectionbody">
 <div class="paragraph">
-<p>Todo.</p>
+<p>A playground to develop a modern Protobuf library for Java.</p>
+</div>
+<div class="paragraph">
+<p>Current features:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Java 11</p>
+</li>
+<li>
+<p>Modular Java</p>
+</li>
+<li>
+<p>Proto3</p>
+</li>
+<li>
+<p>No runtime dependency on <code>com.google.protobuf:protobuf-java</code>, but relies on it at build time</p>
+</li>
+<li>
+<p>The library comes with two flavors</p>
+</li>
+<li>
+<p>Code generation through Protoc plugin</p>
+</li>
+<li>
+<p>Java annotations supporting a subset of Protobuf as we speak</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_basic_usage">Basic usage</h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_creating_a_message">Creating a message</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">Person john = new Person()
+  .setId(1234)
+  .setName("John Doe")
+  .setEmail("jdoe@example.com")
+  .setPhones(List.of(new Person.PhoneNumber()
+    .setNumber("555-4321")
+    .setType(Person.PhoneType.PHONE_TYPE_HOME))
+  );</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_writing_a_message_to_the_protobuf_format">Writing a message to the Protobuf format</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">ProtoStream stream = ProtoWriter.streamOf(john);
+byte[] protobuf = ProtobufWriter.encodeToByteArray(stream);</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_read_a_message_to_the_protobuf_format">Read a message to the Protobuf format</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">ProtoStream stream = ProtobufReader.readerStream(MessageLiteral.Person, protobuf);
+Person person = ProtoReader.readPerson(stream);</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_writing_a_message_to_the_protojson_format">Writing a message to the ProtoJSON format</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">ProtoStream stream = ProtoWriter.streamOf(john);
+String json = ProtoJsonWriter.encode(stream);</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_read_a_message_to_the_protobprotojsonuf_format">Read a message to the ProtobProtoJSONuf format</h3>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">ProtoStream stream = ProtoJsonReader.readStream(MessageLiteral.Person, json);
+Person person = ProtoReader.readPerson(stream);</code></pre>
+</div>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-08-31 19:52:12 UTC
+Last updated 2025-08-31 20:27:26 UTC
 </div>
 </div>
 </body>
