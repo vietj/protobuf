@@ -443,10 +443,10 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_basic_usage">Basic usage</a>
 <ul class="sectlevel2">
 <li><a href="#_creating_a_message">Creating a message</a></li>
-<li><a href="#_writing_a_message_to_the_protobuf_format">Writing a message to the Protobuf format</a></li>
-<li><a href="#_read_a_message_to_the_protobuf_format">Read a message to the Protobuf format</a></li>
-<li><a href="#_writing_a_message_to_the_protojson_format">Writing a message to the ProtoJSON format</a></li>
-<li><a href="#_read_a_message_to_the_protobprotojsonuf_format">Read a message to the ProtobProtoJSONuf format</a></li>
+<li><a href="#_writing_a_protobuf_message">Writing a Protobuf message</a></li>
+<li><a href="#_reading_a_protobuf_message">Reading a Protobuf message</a></li>
+<li><a href="#_writing_a_protojson_message">Writing a ProtoJSON message</a></li>
+<li><a href="#_reading_a_protojson_message">Reading a ProtoJSON message</a></li>
 </ul>
 </li>
 </ul>
@@ -507,7 +507,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 </div>
 <div class="sect2">
-<h3 id="_writing_a_message_to_the_protobuf_format">Writing a message to the Protobuf format</h3>
+<h3 id="_writing_a_protobuf_message">Writing a Protobuf message</h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-java" data-lang="java">ProtoStream stream = ProtoWriter.streamOf(john);
@@ -516,7 +516,7 @@ byte[] protobuf = ProtobufWriter.encodeToByteArray(stream);</code></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_read_a_message_to_the_protobuf_format">Read a message to the Protobuf format</h3>
+<h3 id="_reading_a_protobuf_message">Reading a Protobuf message</h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-java" data-lang="java">ProtoStream stream = ProtobufReader.readerStream(MessageLiteral.Person, protobuf);
@@ -525,7 +525,7 @@ Person person = ProtoReader.readPerson(stream);</code></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_writing_a_message_to_the_protojson_format">Writing a message to the ProtoJSON format</h3>
+<h3 id="_writing_a_protojson_message">Writing a ProtoJSON message</h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-java" data-lang="java">ProtoStream stream = ProtoWriter.streamOf(john);
@@ -534,7 +534,7 @@ String json = ProtoJsonWriter.encode(stream);</code></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_read_a_message_to_the_protobprotojsonuf_format">Read a message to the ProtobProtoJSONuf format</h3>
+<h3 id="_reading_a_protojson_message">Reading a ProtoJSON message</h3>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-java" data-lang="java">ProtoStream stream = ProtoJsonReader.readStream(MessageLiteral.Person, json);
@@ -547,7 +547,7 @@ Person person = ProtoReader.readPerson(stream);</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2025-08-31 20:27:26 UTC
+Last updated 2025-08-31 22:21:22 UTC
 </div>
 </div>
 </body>
