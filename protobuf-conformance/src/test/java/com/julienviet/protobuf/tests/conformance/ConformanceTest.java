@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package com.julienviet.protobuf.tests.core;
+package com.julienviet.protobuf.tests.conformance;
 
 import com.google.protobuf.TypeRegistry;
 import com.google.protobuf.util.JsonFormat;
@@ -27,6 +27,7 @@ import com.julienviet.protobuf.core.ProtobufReader;
 import com.julienviet.protobuf.core.ProtobufWriter;
 import com.julienviet.protobuf.core.json.ProtoJsonReader;
 import com.julienviet.protobuf.core.json.ProtoJsonWriter;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -150,6 +151,6 @@ public class ConformanceTest {
       ProtoWriter.emit(testMessage, visitor);
     });
 
-    assertEquals(result.length, expected.length);
+    Assert.assertEquals(result.length, expected.length);
   }
 }

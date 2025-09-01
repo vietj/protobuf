@@ -14,16 +14,16 @@
  * limitations under the License.
  *
  */
-package com.julienviet.protobuf.tests.core;
+package com.julienviet.protobuf.tests.conformance;
 
 import com.google.common.io.LineReader;
 import junit.framework.AssertionFailedError;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -44,7 +44,7 @@ public class RunConformanceTest {
   @Parameterized.Parameters(name = "{index}: {0}")
   public static Collection<Object[]> data() throws Exception {
     List<Object[]> list = new ArrayList<>();
-    try (InputStream is = FilterTests.class.getResourceAsStream("/all.txt")) {
+    try (InputStream is = ConformanceTest.class.getResourceAsStream("/all.txt")) {
       LineReader reader = new LineReader(new InputStreamReader(is));
       while (true) {
         String line = reader.readLine();
@@ -124,21 +124,21 @@ public class RunConformanceTest {
     Pattern pattern = Pattern.compile("CONFORMANCE SUITE PASSED: ([0-9]+) successes, ([0-9]+) skipped, ([0-9]+) expected failures, ([0-9]+) unexpected failures.");
 
     Matcher matcher = pattern.matcher(s);
-    assertTrue(matcher.find());
+    Assert.assertTrue(matcher.find());
     int successes = Integer.parseInt(matcher.group(1));
     int skipped = Integer.parseInt(matcher.group(2));
     int expectedFailures = Integer.parseInt(matcher.group(3));
     int unexpectedFailures = Integer.parseInt(matcher.group(4));
 
     if (expectedFailures > 0) {
-      fail();
+      Assert.fail();
     }
 
     if (successes == 0) {
       Pattern p = Pattern.compile("WARNING, test=([^:]+):(.*)");
       Matcher m = p.matcher(s);
       if (m.find()) {
-        fail("Unexpected warning " + m.group(1) + ": " + m.group(2));
+        Assert.fail("Unexpected warning " + m.group(1) + ": " + m.group(2));
       }
     }
   }

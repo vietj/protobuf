@@ -16,4 +16,4 @@
 #
 #
 #exec java -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005 -jar target/protobuf-core-0.0.1-SNAPSHOT-conformance.jar "$@"
-exec java -jar target/protobuf-core-0.0.1-SNAPSHOT-conformance.jar "$@"
+exec java -jar target/conformance-runner.jar "$@"

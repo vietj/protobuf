@@ -98,6 +98,7 @@
     <module>protobuf-core</module>
     <module>protobuf-codegen</module>
     <module>protobuf-it</module>
+    <module>protobuf-conformance</module>
     <module>protobuf-docs</module>
   </modules>
 

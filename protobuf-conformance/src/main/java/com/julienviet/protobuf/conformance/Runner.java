@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  */
-package com.julienviet.protobuf.tests.core;
+package com.julienviet.protobuf.conformance;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.conformance.Conformance;
@@ -30,7 +30,7 @@ import com.julienviet.protobuf.core.json.ProtoJsonWriter;
 
 import java.io.StringWriter;
 
-public class Main {
+public class Runner {
 
   private static int testCount;
 
