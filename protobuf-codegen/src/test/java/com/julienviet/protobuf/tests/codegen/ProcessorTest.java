@@ -16,7 +16,16 @@
  */
 package com.julienviet.protobuf.tests.codegen;
 
+import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeBooleanArray;
+import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeByte;
+import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeDoubleArray;
+import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeFloatArray;
+import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeIntArray;
+import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeLongArray;
+import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeShort;
+import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeShortArray;
 import io.vertx.codegen.processor.Compiler;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import com.julienviet.protobuf.core.ProtoStream;
@@ -32,7 +41,7 @@ import com.julienviet.protobuf.schema.Field;
 import com.julienviet.protobuf.schema.MessageType;
 import com.julienviet.protobuf.schema.ScalarType;
 import com.julienviet.protobuf.schema.TypeID;
-import com.julienviet.protobuf.tests.codegen.datatypes.DataTypeContainer;
+import com.julienviet.protobuf.tests.codegen.datatypes.JavaDataTypes;
 import com.julienviet.protobuf.tests.codegen.datatypes.TestEnum;
 import com.julienviet.protobuf.tests.codegen.embedding.Embedded;
 import com.julienviet.protobuf.tests.codegen.embedding.EmbeddedContainer;
@@ -73,6 +82,7 @@ import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -233,34 +243,64 @@ public class ProcessorTest {
   }
 
   @Test
-  public void testDataTypes() {
-    MessageMappers mappers = assertCompile(DataTypeContainer.class, TestEnum.class);
-    MessageMapper<DataTypeContainer> mapper = mappers.of(DataTypeContainer.class);
+  public void testJavaDataTypes() {
+    MessageMappers mappers = assertCompile(JavaDataTypes.class, TestEnum.class);
+    MessageMapper<JavaDataTypes> mapper = mappers.of(JavaDataTypes.class);
     MessageType ml = mapper.literal();
     Field f1 = ml.field(1);
-    assertEquals("stringField", f1.jsonName());
-    assertEquals(ScalarType.STRING, f1.type());
+    assertEquals("intField", f1.jsonName());
+    assertEquals(ScalarType.INT32, f1.type());
     Field f2 = ml.field(2);
     assertEquals("longField", f2.jsonName());
     assertEquals(ScalarType.INT64, f2.type());
     Field f3 = ml.field(3);
-    assertEquals("booleanField", f3.jsonName());
-    assertEquals(ScalarType.BOOL, f3.type());
+    assertEquals("floatField", f3.jsonName());
+    assertEquals(ScalarType.FLOAT, f3.type());
     Field f4 = ml.field(4);
-    assertEquals("enumField", f4.jsonName());
-    assertEquals(TypeID.ENUM, f4.type().id());
-    EnumType enumType = (EnumType) f4.type();
+    assertEquals("doubleField", f4.jsonName());
+    assertEquals(ScalarType.DOUBLE, f4.type());
+    Field f5 = ml.field(5);
+    assertEquals("booleanField", f5.jsonName());
+    assertEquals(ScalarType.BOOL, f5.type());
+    Field f6 = ml.field(6);
+    assertEquals("enumField", f6.jsonName());
+    assertEquals(TypeID.ENUM, f6.type().id());
+    EnumType enumType = (EnumType) f6.type();
     assertEquals("DEFAULT", enumType.nameOf(0));
     assertEquals("ANOTHER", enumType.nameOf(1));
+    Field f7 = ml.field(7);
+    assertEquals("stringField", f7.jsonName());
+    assertEquals(ScalarType.STRING, f7.type());
+    Field f8 = ml.field(8);
+    assertEquals("binaryField", f8.jsonName());
+    assertEquals(ScalarType.BYTES, f8.type());
     JsonObject json = new JsonObject()
-      .put("stringField", "the-string")
-      .put("enumField", "ANOTHER");
-    DataTypeContainer o = mapper.read(ProtoJsonReader.readStream(ml, json.encode()));
-    assertEquals("the-string", o.getStringField());
+      .put(f1.jsonName(), 3)
+      .put(f2.jsonName(), "5")
+      .put(f3.jsonName(), 4.2f)
+      .put(f4.jsonName(), 5.1d)
+      .put(f5.jsonName(), true)
+      .put(f6.jsonName(), "ANOTHER")
+      .put(f7.jsonName(), "the-string")
+      .put(f8.jsonName(), Buffer.buffer("hello world"));
+    JavaDataTypes o = mapper.read(ProtoJsonReader.readStream(ml, json.encode()));
+    assertEquals(3, o.getIntField());
+    assertEquals(5L, o.getLongField());
+    assertEquals(4.2f, o.getFloatField(), 0.001);
+    assertEquals(5.1f, o.getDoubleField(), 0.001);
     assertEquals(TestEnum.ANOTHER, o.getEnumField());
+    assertEquals("the-string", o.getStringField());
+    assertEquals("hello world", new String(o.getBinaryField(), StandardCharsets.UTF_8));
     ProtoStream protoStream = mapper.streamOf(o);
     JsonObject res = new JsonObject(ProtoJsonWriter.encode(protoStream));
-    assertEquals(json, res);
+    assertEquals(3, (int)res.getInteger(f1.jsonName()));
+    assertEquals("5", res.getString(f2.jsonName()));
+    assertEquals(4.2f, res.getFloat(f3.jsonName()), 0.001);
+    assertEquals(5.1f, res.getDouble(f4.jsonName()), 0.001);
+    assertEquals(true, res.getBoolean(f5.jsonName()));
+    assertEquals("ANOTHER", res.getString(f6.jsonName()));
+    assertEquals("the-string", res.getString(f7.jsonName()));
+    assertEquals("hello world", res.getBuffer(f8.jsonName()).toString());
   }
 
   @Test
@@ -443,5 +483,21 @@ public class ProcessorTest {
     assertEquals(ValidationError.INVALID_MESSAGE_CLASS, expected.getError());
     expected = (ValidationException) assertCompilationFailure(InvalidEnumField.class);
     assertEquals(ValidationError.INVALID_MESSAGE_CLASS, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidJavaTypeBooleanArray.class);
+    assertEquals(ValidationError.INVALID_FIELD_TYPE, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidJavaTypeByte.class);
+    assertEquals(ValidationError.INVALID_FIELD_TYPE, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidJavaTypeDoubleArray.class);
+    assertEquals(ValidationError.INVALID_FIELD_TYPE, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidJavaTypeFloatArray.class);
+    assertEquals(ValidationError.INVALID_FIELD_TYPE, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidJavaTypeIntArray.class);
+    assertEquals(ValidationError.INVALID_FIELD_TYPE, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidJavaTypeLongArray.class);
+    assertEquals(ValidationError.INVALID_FIELD_TYPE, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidJavaTypeShort.class);
+    assertEquals(ValidationError.INVALID_FIELD_TYPE, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidJavaTypeShortArray.class);
+    assertEquals(ValidationError.INVALID_FIELD_TYPE, expected.getError());
   }
 }

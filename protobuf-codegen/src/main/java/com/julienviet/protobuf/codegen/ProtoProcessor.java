@@ -41,6 +41,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -284,7 +285,7 @@ public class ProtoProcessor extends AbstractProcessor {
           }
           ProtoType type = protoTypeOf(javaMethod.type);
           if (type == null) {
-            throw new RuntimeException("Not found for " + javaMethod.type);
+            throw new ValidationException(fieldElt, ValidationError.INVALID_FIELD_TYPE, "Field type is not supported");
           }
           String protoName = javaMethod.protoName;
           String jsonName = javaMethod.jsonName;
@@ -492,10 +493,23 @@ public class ProtoProcessor extends AbstractProcessor {
 
   private ProtoType protoTypeOf(TypeMirror type) {
     switch (type.getKind()) {
+      case ARRAY:
+        ArrayType arrayType = (ArrayType) type;
+        if (arrayType.getComponentType().getKind() == TypeKind.BYTE) {
+          return new ProtoScalarType(DescriptorProtos.FieldDescriptorProto.Type.TYPE_BYTES);
+        } else {
+          return null;
+        }
       case BOOLEAN:
         return new ProtoScalarType(DescriptorProtos.FieldDescriptorProto.Type.TYPE_BOOL);
+      case INT:
+        return new ProtoScalarType(DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32);
       case LONG:
         return new ProtoScalarType(DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64);
+      case FLOAT:
+        return new ProtoScalarType(DescriptorProtos.FieldDescriptorProto.Type.TYPE_FLOAT);
+      case DOUBLE:
+        return new ProtoScalarType(DescriptorProtos.FieldDescriptorProto.Type.TYPE_DOUBLE);
       case DECLARED:
         DeclaredType declaredType = (DeclaredType) type;
         Element typeElt = declaredType.asElement();

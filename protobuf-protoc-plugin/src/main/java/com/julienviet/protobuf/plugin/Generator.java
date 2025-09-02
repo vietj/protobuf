@@ -16,7 +16,6 @@
  */
 package com.julienviet.protobuf.plugin;
 
-import com.google.api.AnnotationsProto;
 import com.salesforce.jprotoc.ProtocPlugin;
 import com.julienviet.protobuf.extension.ExtensionProto;
 import picocli.CommandLine;
@@ -35,7 +34,7 @@ public class Generator implements Callable<Integer> {
   @Override
   public Integer call() {
     GeneratorImpl generator = new GeneratorImpl();
-    ProtocPlugin.generate(List.of(generator), List.of(AnnotationsProto.http, ExtensionProto.typeInterop));
+    ProtocPlugin.generate(List.of(generator), List.of(ExtensionProto.typeInterop));
     return 0;
   }
 

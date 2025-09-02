@@ -14,14 +14,19 @@
  * limitations under the License.
  *
  */
-package com.julienviet.protobuf.codegen;
+package com.julienviet.protobuf.tests.codegen.validation;
 
-public enum ValidationError {
+import com.julienviet.protobuf.lang.ProtoField;
+import com.julienviet.protobuf.lang.ProtoMessage;
 
-  MISSING_GETTER,
-  MISSING_SETTER,
-  INVALID_FIELD_METHOD,
-  INVALID_MESSAGE_CLASS,
-  INVALID_FIELD_TYPE,
+@ProtoMessage
+public class InvalidJavaTypeFloatArray {
 
+  @ProtoField(number = 1)
+  public float[] getFoo() {
+    throw new UnsupportedOperationException();
+  }
+
+  public void setFoo(float[] s) {
+  }
 }
