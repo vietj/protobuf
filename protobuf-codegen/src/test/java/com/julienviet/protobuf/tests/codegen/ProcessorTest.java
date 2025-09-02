@@ -16,6 +16,7 @@
  */
 package com.julienviet.protobuf.tests.codegen;
 
+import com.julienviet.protobuf.tests.codegen.datatypes.ProtoDataTypes;
 import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeBooleanArray;
 import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeByte;
 import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeDoubleArray;
@@ -24,6 +25,8 @@ import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeIntArray;
 import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeLongArray;
 import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeShort;
 import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeShortArray;
+import com.julienviet.protobuf.tests.codegen.validation.InvalidProtoTypeInt32;
+import com.julienviet.protobuf.tests.codegen.validation.InvalidProtoTypeInt64;
 import io.vertx.codegen.processor.Compiler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
@@ -304,6 +307,43 @@ public class ProcessorTest {
   }
 
   @Test
+  public void testProtoDataTypes() {
+    MessageMappers mappers = assertCompile(ProtoDataTypes.class);
+    MessageMapper<ProtoDataTypes> mapper = mappers.of(ProtoDataTypes.class);
+    MessageType ml = mapper.literal();
+    Field f1 = ml.field(1);
+    assertEquals("int32Field", f1.jsonName());
+    assertEquals(ScalarType.INT32, f1.type());
+    Field f2 = ml.field(2);
+    assertEquals("uint32Field", f2.jsonName());
+    assertEquals(ScalarType.UINT32, f2.type());
+    Field f3 = ml.field(3);
+    assertEquals("sint32Field", f3.jsonName());
+    assertEquals(ScalarType.SINT32, f3.type());
+    Field f4 = ml.field(4);
+    assertEquals("fixed32Field", f4.jsonName());
+    assertEquals(ScalarType.FIXED32, f4.type());
+    Field f5 = ml.field(5);
+    assertEquals("sfixed32Field", f5.jsonName());
+    assertEquals(ScalarType.SFIXED32, f5.type());
+    Field f6 = ml.field(6);
+    assertEquals("int64Field", f6.jsonName());
+    assertEquals(ScalarType.INT64, f6.type());
+    Field f7 = ml.field(7);
+    assertEquals("uint64Field", f7.jsonName());
+    assertEquals(ScalarType.UINT64, f7.type());
+    Field f8 = ml.field(8);
+    assertEquals("sint64Field", f8.jsonName());
+    assertEquals(ScalarType.SINT64, f8.type());
+    Field f9 = ml.field(9);
+    assertEquals("fixed64Field", f9.jsonName());
+    assertEquals(ScalarType.FIXED64, f9.type());
+    Field f10 = ml.field(10);
+    assertEquals("sfixed64Field", f10.jsonName());
+    assertEquals(ScalarType.SFIXED64, f10.type());
+  }
+
+  @Test
   public void testEmbedded() {
     MessageMappers mappers = assertCompile(EmbeddedContainer.class, Embedded.class);
     MessageMapper<EmbeddedContainer> mapper = mappers.of(EmbeddedContainer.class);
@@ -499,5 +539,9 @@ public class ProcessorTest {
     assertEquals(ValidationError.INVALID_FIELD_TYPE, expected.getError());
     expected = (ValidationException) assertCompilationFailure(InvalidJavaTypeShortArray.class);
     assertEquals(ValidationError.INVALID_FIELD_TYPE, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidProtoTypeInt32.class);
+    assertEquals(ValidationError.INVALID_FIELD_TYPE_MISMATCH, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidProtoTypeInt64.class);
+    assertEquals(ValidationError.INVALID_FIELD_TYPE_MISMATCH, expected.getError());
   }
 }

@@ -28,6 +28,7 @@ import com.julienviet.protobuf.lang.ProtoEnum;
 import com.julienviet.protobuf.lang.ProtoField;
 import com.julienviet.protobuf.lang.ProtoMessage;
 import com.julienviet.protobuf.lang.internal.Utils;
+import com.julienviet.protobuf.schema.TypeID;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
@@ -55,6 +56,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -66,6 +68,33 @@ import java.util.stream.Collectors;
 
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class ProtoProcessor extends AbstractProcessor {
+
+  private static final EnumMap<DescriptorProtos.FieldDescriptorProto.Type, DescriptorProtos.FieldDescriptorProto.Type> CANONICAL_TYPE_MAPPING = new EnumMap<>(DescriptorProtos.FieldDescriptorProto.Type.class);
+  private static final EnumMap<TypeID, DescriptorProtos.FieldDescriptorProto.Type> TYPE_ID_MAPPING = new EnumMap<>(TypeID.class);
+
+  static {
+    CANONICAL_TYPE_MAPPING.put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32, DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32);
+    CANONICAL_TYPE_MAPPING.put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT32, DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32);
+    CANONICAL_TYPE_MAPPING.put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT32, DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32);
+    CANONICAL_TYPE_MAPPING.put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED32, DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32);
+    CANONICAL_TYPE_MAPPING.put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED32, DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32);
+    CANONICAL_TYPE_MAPPING.put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64, DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64);
+    CANONICAL_TYPE_MAPPING.put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT64, DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64);
+    CANONICAL_TYPE_MAPPING.put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT64, DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64);
+    CANONICAL_TYPE_MAPPING.put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED64, DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64);
+    CANONICAL_TYPE_MAPPING.put(DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED64, DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64);
+
+    TYPE_ID_MAPPING.put(TypeID.INT32, DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT32);
+    TYPE_ID_MAPPING.put(TypeID.SINT32, DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT32);
+    TYPE_ID_MAPPING.put(TypeID.UINT32, DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT32);
+    TYPE_ID_MAPPING.put(TypeID.FIXED32, DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED32);
+    TYPE_ID_MAPPING.put(TypeID.SFIXED32, DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED32);
+    TYPE_ID_MAPPING.put(TypeID.INT64, DescriptorProtos.FieldDescriptorProto.Type.TYPE_INT64);
+    TYPE_ID_MAPPING.put(TypeID.SINT64, DescriptorProtos.FieldDescriptorProto.Type.TYPE_SINT64);
+    TYPE_ID_MAPPING.put(TypeID.UINT64, DescriptorProtos.FieldDescriptorProto.Type.TYPE_UINT64);
+    TYPE_ID_MAPPING.put(TypeID.FIXED64, DescriptorProtos.FieldDescriptorProto.Type.TYPE_FIXED64);
+    TYPE_ID_MAPPING.put(TypeID.SFIXED64, DescriptorProtos.FieldDescriptorProto.Type.TYPE_SFIXED64);
+  }
 
   private final boolean testMode;
   private Types typeUtils;
@@ -295,6 +324,14 @@ public class ProtoProcessor extends AbstractProcessor {
           }
           if (!protoField.jsonName().isEmpty()) {
             jsonName = protoField.jsonName();
+          }
+
+          if (protoField.type() != TypeID.UNDEFINED) {
+            DescriptorProtos.FieldDescriptorProto.Type actual = TYPE_ID_MAPPING.get(protoField.type());
+            if (CANONICAL_TYPE_MAPPING.get(actual) != type.type) {
+              throw new ValidationException(fieldElt, ValidationError.INVALID_FIELD_TYPE_MISMATCH, "Field proto type does not match the java field type");
+            }
+            type.type = actual;
           }
 
           DescriptorProtos.FieldDescriptorProto.Builder f = DescriptorProtos.FieldDescriptorProto
@@ -616,7 +653,7 @@ public class ProtoProcessor extends AbstractProcessor {
 
   static abstract class ProtoType {
     boolean repeated;
-    final DescriptorProtos.FieldDescriptorProto.Type type;
+    DescriptorProtos.FieldDescriptorProto.Type type;
     ProtoType(DescriptorProtos.FieldDescriptorProto.Type type) {
       this.type = type;
     }

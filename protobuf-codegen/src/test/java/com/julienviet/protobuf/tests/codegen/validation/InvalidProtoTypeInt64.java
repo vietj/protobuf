@@ -14,15 +14,20 @@
  * limitations under the License.
  *
  */
-package com.julienviet.protobuf.codegen;
+package com.julienviet.protobuf.tests.codegen.validation;
 
-public enum ValidationError {
+import com.julienviet.protobuf.lang.ProtoField;
+import com.julienviet.protobuf.lang.ProtoMessage;
+import com.julienviet.protobuf.schema.TypeID;
 
-  MISSING_GETTER,
-  MISSING_SETTER,
-  INVALID_FIELD_METHOD,
-  INVALID_MESSAGE_CLASS,
-  INVALID_FIELD_TYPE,
-  INVALID_FIELD_TYPE_MISMATCH,
+@ProtoMessage
+public class InvalidProtoTypeInt64 {
 
+  @ProtoField(number = 1, type = TypeID.BOOL)
+  public long getFoo() {
+    throw new UnsupportedOperationException();
+  }
+
+  public void setFoo(long s) {
+  }
 }
