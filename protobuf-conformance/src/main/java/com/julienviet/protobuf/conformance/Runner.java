@@ -28,41 +28,48 @@ import com.google.protobuf_test_messages.proto3.MessageLiteral;
 import com.julienviet.protobuf.core.json.ProtoJsonReader;
 import com.julienviet.protobuf.core.json.ProtoJsonWriter;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringWriter;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 
 public class Runner {
 
   private static int testCount;
 
-  private static void run() throws Exception {
-    while (doTestIo()) {
+  public static void run(InputStream in, OutputStream out) throws Exception {
+    while (doTestIo(in, out)) {
       testCount++;
     }
   }
 
-  private static boolean doTestIo() throws Exception {
-    int bytes = readLittleEndianIntFromStdin();
-
+  private static boolean doTestIo(InputStream in, OutputStream out) throws Exception {
+    int bytes = readLittleEndianIntFromStdin(in);
     if (bytes == -1) {
       return false; // EOF
     }
-
     byte[] serializedInput = new byte[bytes];
-
-    if (!readFromStdin(serializedInput, bytes)) {
+    if (!readFromStdin(in, serializedInput, bytes)) {
       throw new RuntimeException("Unexpected EOF from test program.");
     }
+    Conformance.ConformanceRequest request = Conformance.ConformanceRequest.parseFrom(serializedInput);
 
-    Conformance.ConformanceRequest request =
-      Conformance.ConformanceRequest.parseFrom(serializedInput);
     Conformance.ConformanceResponse response = doTest(request);
-    byte[] serializedOutput = response.toByteArray();
-
-    writeLittleEndianIntToStdout(serializedOutput.length);
-    writeToStdout(serializedOutput);
-
-
+    byte[] serializedOutput;
+    try {
+      serializedOutput = response.toByteArray();
+    } catch (Exception e) {
+      // Can fail due to surrogate exception
+      serializedOutput = errorResponse(e).toByteArray();
+    }
+    writeLittleEndianIntToStdout(out, serializedOutput.length);
+    writeToStdout(out, serializedOutput);
     return true;
+  }
+
+  private static Conformance.ConformanceResponse errorResponse(Exception e) {
+    return Conformance.ConformanceResponse.newBuilder().setParseError(e.getMessage() != null ? e.getMessage() : e.getClass().getName()).build();
   }
 
   private static Conformance.ConformanceResponse doTest(Conformance.ConformanceRequest request) {
@@ -88,7 +95,7 @@ public class Runner {
             break;
         }
       } catch (DecodeException | IndexOutOfBoundsException e) {
-        return Conformance.ConformanceResponse.newBuilder().setParseError(e.getMessage() != null ? e.getMessage() : e.getClass().getName()).build();
+        return errorResponse(e);
       }
       testMessage = (TestAllTypesProto3) reader.stack.pop();
     } else {
@@ -130,22 +137,22 @@ public class Runner {
     }
   }
 
-  private static void writeLittleEndianIntToStdout(int val) throws Exception {
+  private static void writeLittleEndianIntToStdout(OutputStream out, int val) throws Exception {
     byte[] buf = new byte[4];
     buf[0] = (byte) val;
     buf[1] = (byte) (val >> 8);
     buf[2] = (byte) (val >> 16);
     buf[3] = (byte) (val >> 24);
-    writeToStdout(buf);
+    writeToStdout(out, buf);
   }
 
-  private static void writeToStdout(byte[] buf) throws Exception {
-    System.out.write(buf);
+  private static void writeToStdout(OutputStream out, byte[] buf) throws Exception {
+    out.write(buf);
   }
 
-  private static int readLittleEndianIntFromStdin() throws Exception {
+  private static int readLittleEndianIntFromStdin(InputStream in) throws Exception {
     byte[] buf = new byte[4];
-    if (!readFromStdin(buf, 4)) {
+    if (!readFromStdin(in, buf, 4)) {
       return -1;
     }
     return (buf[0] & 0xff)
@@ -154,23 +161,39 @@ public class Runner {
       | ((buf[3] & 0xff) << 24);
   }
 
-  private static boolean readFromStdin(byte[] buf, int len) throws Exception {
+  private static boolean readFromStdin(InputStream in, byte[] buf, int len) throws Exception {
     int ofs = 0;
     while (len > 0) {
-      int read = System.in.read(buf, ofs, len);
+      int read = in.read(buf, ofs, len);
       if (read == -1) {
         return false; // EOF
       }
       ofs += read;
       len -= read;
     }
-
     return true;
   }
 
 
+  /**
+   *
+   */
   public static void main(String[] args) throws Exception {
-//    Thread.sleep(100000000);
-    run();
+    // Assumes this is embedded and executed as a far jar with conformance_test_runner.
+    run(System.in, System.out);
+
+    // Connects to the running docker image most likely started by
+    // > docker build -t protobuf/conformance conformance
+    // > docker run --rm -it --name conformance -p 4000:4000 protobuf/conformance
+     // connectToDockerImage("localhost", 4000);
+  }
+
+  private static void connectToDockerImage(String host, int port) throws Exception {
+    try (Socket so = new Socket()) {
+      so.connect(new InetSocketAddress(host, port));
+      InputStream in = so.getInputStream();
+      OutputStream out = so.getOutputStream();
+      run(in, out);
+    }
   }
 }

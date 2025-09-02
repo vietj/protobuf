@@ -610,7 +610,7 @@ public class ProtoJsonReader {
 //            Object value = entries.getValue("value");
 //            StructParser.parseValue();
 //          }
-          throw new UnsupportedOperationException();
+          throw new DecodeException();
         default:
           throw new UnsupportedOperationException("Unsupported " + field.type());
       }

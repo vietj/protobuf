@@ -1,1 +1,0 @@
-Required.Proto3.TextFormatInput.FloatFieldNegative_f.ProtobufOutput # Failed to parse input or produce output.

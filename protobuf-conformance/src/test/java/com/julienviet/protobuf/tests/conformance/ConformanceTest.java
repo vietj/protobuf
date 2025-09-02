@@ -16,141 +16,149 @@
  */
 package com.julienviet.protobuf.tests.conformance;
 
-import com.google.protobuf.TypeRegistry;
-import com.google.protobuf.util.JsonFormat;
-import com.google.protobuf_test_messages.proto3.MessageLiteral;
-import com.google.protobuf_test_messages.proto3.ProtoReader;
-import com.google.protobuf_test_messages.proto3.ProtoWriter;
-import com.google.protobuf_test_messages.proto3.TestAllTypesProto3;
-import com.google.protobuf_test_messages.proto3.TestMessagesProto3;
-import com.julienviet.protobuf.core.ProtobufReader;
-import com.julienviet.protobuf.core.ProtobufWriter;
-import com.julienviet.protobuf.core.json.ProtoJsonReader;
-import com.julienviet.protobuf.core.json.ProtoJsonWriter;
-import org.junit.Assert;
+import com.julienviet.protobuf.conformance.Runner;
+import junit.framework.AssertionFailedError;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.images.builder.ImageFromDockerfile;
 
-import java.io.StringWriter;
-import java.util.List;
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
+/**
+ * Attempt to run conformance test using docker + socat but does not really work
+ */
 public class ConformanceTest {
 
-  private TypeRegistry typeRegistry;
+  private ImageFromDockerfile testBuildDockerFile() {
+    String baseDirProp = System.getProperty("maven.project.basedir");
+    assertNotNull("Missing project basedir", baseDirProp);
+    File baseDir = new File(baseDirProp);
+    assertTrue(baseDir.exists());
+    assertTrue(baseDir.isDirectory());
+    File dockerFile = new File(baseDir, "src" + File.separator + "test" + File.separator + "docker" + File.separator + "conformance" + File.separator + "DockerFile");
+    assertTrue(dockerFile.exists());
+    assertTrue(dockerFile.isFile());
+    File conformanceFile = new File(baseDir, "src" + File.separator + "test" + File.separator + "docker" + File.separator + "conformance" + File.separator +  "conformance.sh");
+    assertTrue(conformanceFile.exists());
+    assertTrue(conformanceFile.isFile());
+    File knownFailuresFile = new File(baseDir, "src" + File.separator + "test" + File.separator + "docker" + File.separator + "conformance" + File.separator +  "known_failures.txt");
+    assertTrue(conformanceFile.exists());
+    assertTrue(conformanceFile.isFile());
+    return new ImageFromDockerfile("protobuf/conformance", false)
+      .withDockerfile(dockerFile.toPath())
+      .withFileFromFile("conformance.sh", conformanceFile)
+      .withFileFromFile("known_failures.txt", knownFailuresFile);
+  }
 
-  public ConformanceTest() {
-    typeRegistry =
-      TypeRegistry.newBuilder()
-        .add(TestMessagesProto3.TestAllTypesProto3.getDescriptor())
-        .add(com.google.protobuf_test_messages.proto3.TestMessagesProto3.TestAllTypesProto3.getDescriptor())
-        .build();
+  private void startServerSocket(CountDownLatch bind, CountDownLatch done) throws Exception {
+    try (ServerSocket server = new ServerSocket()) {
+      server.bind(new InetSocketAddress("localhost", 4000));
+      bind.countDown();
+      Socket socket = server.accept();
+      Runner.run(socket.getInputStream(), socket.getOutputStream());
+      done.countDown();
+    }
   }
 
   @Ignore
   @Test
-  public void testJsonOutput() throws Exception {
-    byte[] bytes = { -110, 19, 9, 17, 0, 0, 0, 0, 0, 0, -16, 127 };
-    ProtoReader reader = new ProtoReader();
-    TestMessagesProto3.TestAllTypesProto3 d = TestMessagesProto3.TestAllTypesProto3.parseFrom(bytes);
-
-    JsonFormat.Printer printer = JsonFormat.printer();
-    String expected = printer.print(d);
-
-    System.out.println(expected);
-
-    ProtobufReader.parse(MessageLiteral.TestAllTypesProto3, reader, bytes);
-    TestAllTypesProto3 testMessage = (TestAllTypesProto3) reader.stack.pop();
-
-    StringWriter out = new StringWriter();
-    ProtoJsonWriter streamingProtoJsonWriter = new ProtoJsonWriter(out);
-    streamingProtoJsonWriter.write(visitor -> {
-      ProtoWriter.emit(testMessage, visitor);
+  public void testWithServerSocket() throws Exception {
+    // Start TCP server
+    CountDownLatch latch1 = new CountDownLatch(1);
+    CountDownLatch latch2 = new CountDownLatch(1);
+    Thread server = new Thread(() -> {
+      try {
+        startServerSocket(latch1, latch2);
+      } catch (Exception e) {
+        e.printStackTrace(System.out);
+      }
     });
-//    String output = JsonWriter.encode(v -> ProtoWriter.emit(testMessage, v)).encode();
+    server.start();
+    latch1.await(1, TimeUnit.MINUTES);
+    System.out.println("Server listen");
 
-//    System.out.println(output);
-
-  }
-
-  @Test
-  public void testJsonInput() throws Exception {
-
-    String json = "{\"oneofNullValue\": null}";
-
+    // ImageFromDockerfile img = testBuildDockerFile();
 /*
-    json = "{\n" +
-      "        \"optionalAny\": {\n" +
-      "          \"@type\": \"type.googleapis.com/protobuf_test_messages.proto3.TestAllTypesProto3\",\n" +
-      "          \"optionalInt32\": 12345\n" +
-      "  }\n" +
-      "      }";
+    Testcontainers.exposeHostPorts(4000);
+    try (GenericContainer<?> container = new GenericContainer<>("protobuf/conformance")) {
+      StringBuilder sb = new StringBuilder();
+      container.withLogConsumer(frame -> {
+//        sb.append(frame.getUtf8String());
+        System.out.print(frame.getUtf8String());
+      });
+      System.out.println("Starting test container");
+      container.start();
+      System.out.println("Test container running");
+    } finally {
+      Testcontainers.exposeHostPorts();
+    }
 */
 
-    TestMessagesProto3.TestAllTypesProto3.Builder builder = TestMessagesProto3.TestAllTypesProto3.newBuilder();
-    JsonFormat.parser().usingTypeRegistry(typeRegistry).merge(json, builder);
-    TestMessagesProto3.TestAllTypesProto3 d = builder.build();
-
-    String print = JsonFormat.printer().print(d);
-    System.out.println(print);
-
-    ProtoReader reader = new ProtoReader();
-    ProtoJsonReader.parse(json, MessageLiteral.TestAllTypesProto3, reader);
-    TestAllTypesProto3 testMessage = (TestAllTypesProto3) reader.stack.pop();
-
-    StringWriter out = new StringWriter();
-    ProtoJsonWriter streamingProtoJsonWriter = new ProtoJsonWriter(out);
-    streamingProtoJsonWriter.write(visitor -> {
-      ProtoWriter.emit(testMessage, visitor);
-    });
-    System.out.println(out);
-
+    latch2.await(1, TimeUnit.MINUTES);
+    System.out.println("Done");
+    server.join();
   }
 
+  @Ignore
   @Test
   public void testConformance() throws Exception {
+    ImageFromDockerfile img = testBuildDockerFile();
+    try (GenericContainer<?> container = new GenericContainer<>(img)) {
+      StringBuilder sb = new StringBuilder();
+      container.withLogConsumer(frame -> {
+        sb.append(frame.getUtf8String());
+      });
+      container.addExposedPort(4000);
+      container.start();
 
-    // Recommended.Proto3.ProtobufInput.ValidDataRepeated.ENUM.PackedInput.UnpackedOutput.ProtobufOutput
-    byte[] bytes = { -102, 3, 32, 0, 1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 127, -127, -128, -128, -128, -128, -128, -128, -128, -128, 1 };
+      int actualPort = container.getMappedPort(4000);
+      for (int i = 0;i < 10;i++) {
+        Thread.sleep(100);
+        try (Socket so = new Socket()) {
+          so.connect(new InetSocketAddress("localhost", actualPort));
+          InputStream in = so.getInputStream();
+          OutputStream out = so.getOutputStream();
+          Runner.run(in, out);
+          // Check if we have a result
+          if (checkResult(sb.toString())) {
+            break;
+          }
+        } catch (ConnectException ex) {
+          break;
+        }
+       }
+    }
+  }
 
-    // Expected
-    // [-48, 41, 123,
-    // -48, 41, -56, 3,
-    // -46, 41, 3, 97, 98, 99,
-    // -46, 41, 3, 100, 101, 102
-    // ]
-
-    // Actual
-    // [-46, 41, 3, 97, 98, 99,
-    // -46, 41, 3, 100, 101, 102,
-    // -48, 41, 123,
-    // -48, 41, -56, 3]
-
-    // 0
-    // 1
-    // 2
-    // -1
-    // -1
-    // 1
-
-
-    ProtoReader reader = new ProtoReader();
-    TestMessagesProto3.TestAllTypesProto3 d = TestMessagesProto3.TestAllTypesProto3.parseFrom(bytes);
-
-    byte[] expected = d.toByteArray();
-
-    // repeatedUint64
-
-    //    System.out.println("d = " + d);
-    ProtobufReader.parse(MessageLiteral.TestAllTypesProto3, reader, bytes);
-    TestAllTypesProto3 testMessage = (TestAllTypesProto3) reader.stack.pop();
-    List<TestAllTypesProto3.NestedEnum> a = testMessage.getRepeatedNestedEnum();
-
-    byte[] result = ProtobufWriter.encodeToByteArray(visitor -> {
-      ProtoWriter.emit(testMessage, visitor);
-    });
-
-    Assert.assertEquals(result.length, expected.length);
+  private boolean checkResult(String s) {
+    Pattern pattern = Pattern.compile("CONFORMANCE SUITE (FAILED|PASSED): ([0-9]+) successes, ([0-9]+) skipped, ([0-9]+) expected failures, ([0-9]+) unexpected failures.");
+    Matcher matcher = pattern.matcher(s);
+    if (matcher.find()) {
+      String result = matcher.group(1);
+      int successes = Integer.parseInt(matcher.group(2));
+      int skipped = Integer.parseInt(matcher.group(3));
+      int expectedFailures = Integer.parseInt(matcher.group(4));
+      int unexpectedFailures = Integer.parseInt(matcher.group(5));
+      if (result.equals("FAILED")) {
+        throw new AssertionFailedError("Conformance failure: " + matcher.group(0));
+      }
+      return true;
+    }
+    return false;
   }
 }
