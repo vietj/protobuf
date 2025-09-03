@@ -14,18 +14,19 @@
  * limitations under the License.
  *
  */
-package com.julienviet.protobuf.codegen;
+package com.julienviet.protobuf.tests.codegen.validation;
 
-public enum ValidationError {
+import com.julienviet.protobuf.lang.ProtoField;
+import com.julienviet.protobuf.lang.ProtoMessage;
 
-  MESSAGE_INVALID_JAVA_CLASS,
-  FIELD_MISSING_JAVA_GETTER_METHOD,
-  FIELD_MISSING_JAVA_SETTER_METHOD,
-  FIELD_INVALID_JAVA_METHOD,
-  FIELD_INVALID_JAVA_TYPE,
-  FIELD_TYPE_MISMATCH,
-  FIELD_DUPLICATE_NUMBER,
-  FIELD_ILLEGAL_NUMBER
-  ;
+@ProtoMessage
+public class IllegalFieldNumber2 {
 
+  @ProtoField(number = -1)
+  public String getFoo() {
+    throw new UnsupportedOperationException();
+  }
+
+  public void setFoo(String s) {
+  }
 }

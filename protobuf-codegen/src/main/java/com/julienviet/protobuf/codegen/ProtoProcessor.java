@@ -257,13 +257,13 @@ public class ProtoProcessor extends AbstractProcessor {
       .filter(elt -> elt.getAnnotation(ProtoMessage.class) != null)
       .forEach(annotatedElt -> {
         if (annotatedElt.getKind() != ElementKind.CLASS) {
-          throw new ValidationException(annotatedElt, ValidationError.INVALID_MESSAGE_CLASS, "@ProtoMessage must annotated a class");
+          throw new ValidationException(annotatedElt, ValidationError.MESSAGE_INVALID_JAVA_CLASS, "@ProtoMessage must annotated a class");
         }
         if (annotatedElt.getModifiers().contains(Modifier.ABSTRACT)) {
-          throw new ValidationException(annotatedElt, ValidationError.INVALID_MESSAGE_CLASS, "Message class cannot be abstract");
+          throw new ValidationException(annotatedElt, ValidationError.MESSAGE_INVALID_JAVA_CLASS, "Message class cannot be abstract");
         }
         if (annotatedElt.getEnclosingElement().getKind() != ElementKind.PACKAGE) {
-          throw new ValidationException(annotatedElt, ValidationError.INVALID_MESSAGE_CLASS, "Message class must be top level");
+          throw new ValidationException(annotatedElt, ValidationError.MESSAGE_INVALID_JAVA_CLASS, "Message class must be top level");
         }
         Map<Integer, ExecutableElement> map = annotatedElt.getEnclosedElements().stream()
           .filter(elt -> elt.getKind() == ElementKind.CONSTRUCTOR)
@@ -274,10 +274,10 @@ public class ProtoProcessor extends AbstractProcessor {
           if (map.isEmpty()) {
             // Implicit no arg constructor
           } else {
-            throw new ValidationException(annotatedElt, ValidationError.INVALID_MESSAGE_CLASS, "Message class must have a no argument constructor");
+            throw new ValidationException(annotatedElt, ValidationError.MESSAGE_INVALID_JAVA_CLASS, "Message class must have a no argument constructor");
           }
         } else if (defaultConstructor.getModifiers().contains(Modifier.PRIVATE)) {
-          throw new ValidationException(annotatedElt, ValidationError.INVALID_MESSAGE_CLASS, "Message class no argument constructor must not be private");
+          throw new ValidationException(annotatedElt, ValidationError.MESSAGE_INVALID_JAVA_CLASS, "Message class no argument constructor must not be private");
         }
         blah.add((TypeElement) annotatedElt);
       });
@@ -306,15 +306,23 @@ public class ProtoProcessor extends AbstractProcessor {
           .map(ExecutableElement.class::cast)
           .collect(Collectors.toList());
 
+        Set<Integer> numbers = new HashSet<>();
         for (ExecutableElement fieldElt : list) {
           ProtoField protoField = fieldElt.getAnnotation(ProtoField.class);
+          int fieldNumber = protoField.number();
+          if (fieldNumber <= 0) {
+            throw new ValidationException(fieldElt, ValidationError.FIELD_ILLEGAL_NUMBER, "Illegal field number");
+          }
+          if (!numbers.add(fieldNumber)) {
+            throw new ValidationException(fieldElt, ValidationError.FIELD_DUPLICATE_NUMBER, "Duplicate field number");
+          }
           JavaMethod javaMethod = determineMethod(msgElt, fieldElt);
           if (javaMethod == null) {
-            throw new ValidationException(fieldElt, ValidationError.INVALID_FIELD_METHOD, "Method must be a getter or a setter");
+            throw new ValidationException(fieldElt, ValidationError.FIELD_INVALID_JAVA_METHOD, "Method must be a getter or a setter");
           }
           ProtoType type = protoTypeOf(javaMethod.type);
           if (type == null) {
-            throw new ValidationException(fieldElt, ValidationError.INVALID_FIELD_TYPE, "Field type is not supported");
+            throw new ValidationException(fieldElt, ValidationError.FIELD_INVALID_JAVA_TYPE, "Field type is not supported");
           }
           String protoName = javaMethod.protoName;
           String jsonName = javaMethod.jsonName;
@@ -329,14 +337,14 @@ public class ProtoProcessor extends AbstractProcessor {
           if (protoField.type() != TypeID.UNDEFINED) {
             DescriptorProtos.FieldDescriptorProto.Type actual = TYPE_ID_MAPPING.get(protoField.type());
             if (CANONICAL_TYPE_MAPPING.get(actual) != type.type) {
-              throw new ValidationException(fieldElt, ValidationError.INVALID_FIELD_TYPE_MISMATCH, "Field proto type does not match the java field type");
+              throw new ValidationException(fieldElt, ValidationError.FIELD_TYPE_MISMATCH, "Field proto type does not match the java field type");
             }
             type.type = actual;
           }
 
           DescriptorProtos.FieldDescriptorProto.Builder f = DescriptorProtos.FieldDescriptorProto
             .newBuilder()
-            .setNumber(protoField.number())
+            .setNumber(fieldNumber)
             .setName(protoName)
             .setJsonName(jsonName)
             .setType(type.type)
@@ -360,7 +368,7 @@ public class ProtoProcessor extends AbstractProcessor {
                 DescriptorProtos.EnumDescriptorProto.Builder b2 = found.get();
                 f.setTypeName(b2.getName());
               } else {
-                throw new ValidationException(fieldElt, ValidationError.INVALID_MESSAGE_CLASS, "Referenced enum must be annotated with @ProtoEnum");
+                throw new ValidationException(fieldElt, ValidationError.MESSAGE_INVALID_JAVA_CLASS, "Referenced enum must be annotated with @ProtoEnum");
               }
             } else {
               throw new UnsupportedOperationException("Not yet implemented");
@@ -486,7 +494,7 @@ public class ProtoProcessor extends AbstractProcessor {
       String jsonName = Introspector.decapitalize(name.substring(3));
       String writeMethod = "set" + name.substring(3);
       if (!hasSetter(msgElt, elt.getReturnType(), writeMethod)) {
-        throw new ValidationException(elt, ValidationError.MISSING_SETTER, "Method does not have a corresponding setter");
+        throw new ValidationException(elt, ValidationError.FIELD_MISSING_JAVA_SETTER_METHOD, "Method does not have a corresponding setter");
       }
       return JavaMethod.createGet(jsonName, name, writeMethod, elt.getReturnType(), elt);
     } else if (name.startsWith("is") && name.length() > 2 && Character.isUpperCase(name.charAt(2)) &&
@@ -494,7 +502,7 @@ public class ProtoProcessor extends AbstractProcessor {
       String jsonName = Introspector.decapitalize(name.substring(2));
       String writeMethod = "set" + name.substring(2);
       if (!hasSetter(msgElt, elt.getReturnType(), writeMethod)) {
-        throw new ValidationException(elt, ValidationError.MISSING_SETTER, "Method does not have a corresponding setter");
+        throw new ValidationException(elt, ValidationError.FIELD_MISSING_JAVA_SETTER_METHOD, "Method does not have a corresponding setter");
       }
       return JavaMethod.createIs(jsonName, name, writeMethod, elt.getReturnType(), elt);
     } else {
@@ -512,13 +520,13 @@ public class ProtoProcessor extends AbstractProcessor {
           } else if (results.containsKey(getKey)) {
             readerMethod = getKey;
           } else {
-            throw new ValidationException(elt, ValidationError.MISSING_GETTER, "Method does not have a corresponding getter");
+            throw new ValidationException(elt, ValidationError.FIELD_MISSING_JAVA_GETTER_METHOD, "Method does not have a corresponding getter");
           }
         } else {
           if (results.containsKey(getKey)) {
             readerMethod = getKey;
           } else {
-            throw new ValidationException(elt, ValidationError.MISSING_GETTER, "Method does not have a corresponding getter");
+            throw new ValidationException(elt, ValidationError.FIELD_MISSING_JAVA_GETTER_METHOD, "Method does not have a corresponding getter");
           }
         }
         return JavaMethod.createSet(jsonName, readerMethod, name, type, elt);
