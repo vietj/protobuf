@@ -64,14 +64,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class ProtoProcessor extends AbstractProcessor {
 
-  private static final Pattern PROTO_IDENTIFIER = Pattern.compile("\\p{Alpha}[\\p{Alnum}_]*");
-  private static final Pattern FIELD_NAME = PROTO_IDENTIFIER;
+  private static final Pattern PROTO_FIELD_IDENTIFIER = Pattern.compile("\\p{Alpha}[\\p{Alnum}_]*");
+  private static final Pattern FIELD_NAME = PROTO_FIELD_IDENTIFIER;
 
   private static final EnumMap<DescriptorProtos.FieldDescriptorProto.Type, DescriptorProtos.FieldDescriptorProto.Type> CANONICAL_TYPE_MAPPING = new EnumMap<>(DescriptorProtos.FieldDescriptorProto.Type.class);
   private static final EnumMap<TypeID, DescriptorProtos.FieldDescriptorProto.Type> TYPE_ID_MAPPING = new EnumMap<>(TypeID.class);
@@ -315,7 +316,7 @@ public class ProtoProcessor extends AbstractProcessor {
           ProtoField protoField = fieldElt.getAnnotation(ProtoField.class);
           int fieldNumber = protoField.number();
           if (fieldNumber <= 0) {
-            throw new ValidationException(fieldElt, ValidationError.FIELD_ILLEGAL_NUMBER, "Illegal field number");
+            throw new ValidationException(fieldElt, ValidationError.FIELD_INVALID_NUMBER, "Illegal field number");
           }
           if (!numbers.add(fieldNumber)) {
             throw new ValidationException(fieldElt, ValidationError.FIELD_DUPLICATE_NUMBER, "Duplicate field number");
@@ -349,6 +350,11 @@ public class ProtoProcessor extends AbstractProcessor {
             case 3:
               // Nothing to do all specified
               break;
+          }
+
+          Matcher protoNameMatcher = PROTO_FIELD_IDENTIFIER.matcher(protoName);
+          if (!protoNameMatcher.matches()) {
+            throw new ValidationException(fieldElt, ValidationError.FIELD_INVALID_PROTO_NAME, "Field proto name is illegal");
           }
 
           if (protoField.type() != TypeID.UNDEFINED) {

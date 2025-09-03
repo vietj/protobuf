@@ -19,8 +19,9 @@ package com.julienviet.protobuf.tests.codegen;
 import com.julienviet.protobuf.tests.codegen.datatypes.ProtoDataTypes;
 import com.julienviet.protobuf.tests.codegen.naming.DeclareJsonName;
 import com.julienviet.protobuf.tests.codegen.validation.DuplicateFieldNumber;
-import com.julienviet.protobuf.tests.codegen.validation.IllegalFieldNumber1;
-import com.julienviet.protobuf.tests.codegen.validation.IllegalFieldNumber2;
+import com.julienviet.protobuf.tests.codegen.validation.InvalidFieldNumber1;
+import com.julienviet.protobuf.tests.codegen.validation.InvalidFieldNumber2;
+import com.julienviet.protobuf.tests.codegen.validation.InvalidFieldProtoName;
 import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeBooleanArray;
 import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeByte;
 import com.julienviet.protobuf.tests.codegen.validation.InvalidJavaTypeDoubleArray;
@@ -560,9 +561,11 @@ public class ProcessorTest {
     assertEquals(ValidationError.FIELD_TYPE_MISMATCH, expected.getError());
     expected = (ValidationException) assertCompilationFailure(DuplicateFieldNumber.class);
     assertEquals(ValidationError.FIELD_DUPLICATE_NUMBER, expected.getError());
-    expected = (ValidationException) assertCompilationFailure(IllegalFieldNumber1.class);
-    assertEquals(ValidationError.FIELD_ILLEGAL_NUMBER, expected.getError());
-    expected = (ValidationException) assertCompilationFailure(IllegalFieldNumber2.class);
-    assertEquals(ValidationError.FIELD_ILLEGAL_NUMBER, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidFieldNumber1.class);
+    assertEquals(ValidationError.FIELD_INVALID_NUMBER, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidFieldNumber2.class);
+    assertEquals(ValidationError.FIELD_INVALID_NUMBER, expected.getError());
+    expected = (ValidationException) assertCompilationFailure(InvalidFieldProtoName.class);
+    assertEquals(ValidationError.FIELD_INVALID_PROTO_NAME, expected.getError());
   }
 }

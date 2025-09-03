@@ -20,7 +20,7 @@ import com.julienviet.protobuf.lang.ProtoField;
 import com.julienviet.protobuf.lang.ProtoMessage;
 
 @ProtoMessage
-public class IllegalFieldNumber1 {
+public class InvalidFieldNumber1 {
 
   @ProtoField(number = 0)
   public String getFoo() {
