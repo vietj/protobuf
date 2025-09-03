@@ -20,7 +20,7 @@ import com.julienviet.protobuf.lang.ProtoField;
 import com.julienviet.protobuf.lang.ProtoMessage;
 
 @ProtoMessage
-public class OverrideProtoName {
+public class DeclareProtoName {
 
   @ProtoField(number = 1, protoName = "the_one_two")
   public String getOneTwo() {

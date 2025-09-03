@@ -64,10 +64,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class ProtoProcessor extends AbstractProcessor {
+
+  private static final Pattern PROTO_IDENTIFIER = Pattern.compile("\\p{Alpha}[\\p{Alnum}_]*");
+  private static final Pattern FIELD_NAME = PROTO_IDENTIFIER;
 
   private static final EnumMap<DescriptorProtos.FieldDescriptorProto.Type, DescriptorProtos.FieldDescriptorProto.Type> CANONICAL_TYPE_MAPPING = new EnumMap<>(DescriptorProtos.FieldDescriptorProto.Type.class);
   private static final EnumMap<TypeID, DescriptorProtos.FieldDescriptorProto.Type> TYPE_ID_MAPPING = new EnumMap<>(TypeID.class);
@@ -324,14 +328,27 @@ public class ProtoProcessor extends AbstractProcessor {
           if (type == null) {
             throw new ValidationException(fieldElt, ValidationError.FIELD_INVALID_JAVA_TYPE, "Field type is not supported");
           }
-          String protoName = javaMethod.protoName;
-          String jsonName = javaMethod.jsonName;
-          if (!protoField.protoName().isEmpty()) {
-            protoName = protoField.protoName();
-            jsonName = Utils.snakeToLowerCamel(protoName);
-          }
-          if (!protoField.jsonName().isEmpty()) {
-            jsonName = protoField.jsonName();
+
+          String protoName = protoField.protoName();
+          String jsonName = protoField.jsonName();
+          int v = (protoName.isEmpty() ? 0 : 1) + (jsonName.isEmpty() ? 0 : 2);
+          switch (v) {
+            case 0:
+              // Full inference from property name
+              jsonName = javaMethod.propertyName;
+              protoName = Utils.lowerCamelToSnake(jsonName);
+              break;
+            case 1:
+              // Infer json name from proto name
+              jsonName = Utils.snakeToLowerCamel(protoName);
+              break;
+            case 2:
+              // Infer from json name
+              protoName = Utils.lowerCamelToSnake(jsonName);
+              break;
+            case 3:
+              // Nothing to do all specified
+              break;
           }
 
           if (protoField.type() != TypeID.UNDEFINED) {
@@ -491,12 +508,12 @@ public class ProtoProcessor extends AbstractProcessor {
   private JavaMethod determineMethod(TypeElement msgElt, ExecutableElement elt) {
     String name = elt.getSimpleName().toString();
     if (name.startsWith("get") && name.length() > 3 && Character.isUpperCase(name.charAt(3)) && elt.getParameters().isEmpty() && elt.getReturnType().getKind() != TypeKind.VOID) {
-      String jsonName = Introspector.decapitalize(name.substring(3));
+      String propertyName = Introspector.decapitalize(name.substring(3));
       String writeMethod = "set" + name.substring(3);
       if (!hasSetter(msgElt, elt.getReturnType(), writeMethod)) {
         throw new ValidationException(elt, ValidationError.FIELD_MISSING_JAVA_SETTER_METHOD, "Method does not have a corresponding setter");
       }
-      return JavaMethod.createGet(jsonName, name, writeMethod, elt.getReturnType(), elt);
+      return JavaMethod.createGet(propertyName, name, writeMethod, elt.getReturnType(), elt);
     } else if (name.startsWith("is") && name.length() > 2 && Character.isUpperCase(name.charAt(2)) &&
       elt.getParameters().isEmpty() && elt.getReturnType().getKind() != TypeKind.VOID) {
       String jsonName = Introspector.decapitalize(name.substring(2));

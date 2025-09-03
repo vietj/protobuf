@@ -16,15 +16,13 @@
  */
 package com.julienviet.protobuf.codegen;
 
-import com.julienviet.protobuf.lang.internal.Utils;
-
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 
 public class JavaMethod {
 
-  static JavaMethod createGet(String name, String readerMethod, String writerMethod, TypeMirror type, ExecutableElement element) {
-    return new JavaMethod(name, readerMethod, writerMethod, type, element);
+  static JavaMethod createGet(String propertyName, String readerMethod, String writerMethod, TypeMirror type, ExecutableElement element) {
+    return new JavaMethod(propertyName, readerMethod, writerMethod, type, element);
   }
 
   static JavaMethod createSet(String name, String readerMethod, String writerMethod, TypeMirror type, ExecutableElement element) {
@@ -35,18 +33,16 @@ public class JavaMethod {
     return new JavaMethod(name, readerMethod, writerMethod, type, element);
   }
 
-  final String jsonName;
-  final String protoName;
+  final String propertyName;
   final String readerMethod;
   final String writerMethod;
   final TypeMirror type;
   final ExecutableElement element;
 
-  public JavaMethod(String jsonName, String readerMethod, String writerMethod, TypeMirror type, ExecutableElement element) {
-    this.jsonName = jsonName;
+  public JavaMethod(String propertyName, String readerMethod, String writerMethod, TypeMirror type, ExecutableElement element) {
+    this.propertyName = propertyName;
     this.readerMethod = readerMethod;
     this.writerMethod = writerMethod;
-    this.protoName = Utils.lowerCamelToSnake(jsonName);
     this.type = type;
     this.element = element;
   }

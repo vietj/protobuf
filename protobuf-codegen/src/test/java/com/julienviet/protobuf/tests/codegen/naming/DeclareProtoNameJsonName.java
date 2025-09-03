@@ -20,9 +20,9 @@ import com.julienviet.protobuf.lang.ProtoField;
 import com.julienviet.protobuf.lang.ProtoMessage;
 
 @ProtoMessage
-public class OverrideJsonName {
+public class DeclareProtoNameJsonName {
 
-  @ProtoField(number = 1, jsonName = "unoDos")
+  @ProtoField(number = 1, protoName = "uno_dos", jsonName = "unoDos")
   public String getOneTwo() {
     throw new UnsupportedOperationException();
   }
@@ -31,7 +31,7 @@ public class OverrideJsonName {
     throw new UnsupportedOperationException();
   }
 
-  @ProtoField(number = 2, jsonName = "the-url")
+  @ProtoField(number = 2, protoName = "the_url", jsonName = "the-url")
   public String getURL() {
     throw new UnsupportedOperationException();
   }

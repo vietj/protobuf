@@ -17,6 +17,7 @@
 package com.julienviet.protobuf.tests.codegen;
 
 import com.julienviet.protobuf.tests.codegen.datatypes.ProtoDataTypes;
+import com.julienviet.protobuf.tests.codegen.naming.DeclareJsonName;
 import com.julienviet.protobuf.tests.codegen.validation.DuplicateFieldNumber;
 import com.julienviet.protobuf.tests.codegen.validation.IllegalFieldNumber1;
 import com.julienviet.protobuf.tests.codegen.validation.IllegalFieldNumber2;
@@ -57,8 +58,8 @@ import com.julienviet.protobuf.tests.codegen.interop.InteropContainer;
 import com.julienviet.protobuf.tests.codegen.maps.MapsContainer;
 import com.julienviet.protobuf.tests.codegen.naming.InferFromGetter;
 import com.julienviet.protobuf.tests.codegen.naming.InferFromSetter;
-import com.julienviet.protobuf.tests.codegen.naming.OverrideJsonName;
-import com.julienviet.protobuf.tests.codegen.naming.OverrideProtoName;
+import com.julienviet.protobuf.tests.codegen.naming.DeclareProtoNameJsonName;
+import com.julienviet.protobuf.tests.codegen.naming.DeclareProtoName;
 import com.julienviet.protobuf.tests.codegen.repetition.RepeatedContainer;
 import com.julienviet.protobuf.tests.codegen.unknown.UnknownAware;
 import com.julienviet.protobuf.tests.codegen.unknown.UnknownUnaware;
@@ -482,9 +483,9 @@ public class ProcessorTest {
   }
 
   @Test
-  public void testOverrideProtoName() {
-    MessageMappers mappers = assertCompile(OverrideProtoName.class);
-    MessageMapper<OverrideProtoName> mm = mappers.of(OverrideProtoName.class);
+  public void testDeclareProtoName() {
+    MessageMappers mappers = assertCompile(DeclareProtoName.class);
+    MessageMapper<DeclareProtoName> mm = mappers.of(DeclareProtoName.class);
     MessageType literal = mm.literal();
     assertEquals("the_one_two", literal.field(1).protoName());
     assertEquals("theOneTwo", literal.field(1).jsonName());
@@ -493,13 +494,24 @@ public class ProcessorTest {
   }
 
   @Test
-  public void testOverrideJsonName() {
-    MessageMappers mappers = assertCompile(OverrideJsonName.class);
-    MessageMapper<OverrideJsonName> mm = mappers.of(OverrideJsonName.class);
+  public void testDeclareJsonName() {
+    MessageMappers mappers = assertCompile(DeclareJsonName.class);
+    MessageMapper<DeclareJsonName> mm = mappers.of(DeclareJsonName.class);
     MessageType literal = mm.literal();
-    assertEquals("one_two", literal.field(1).protoName());
+    assertEquals("uno_dos", literal.field(1).protoName());
     assertEquals("unoDos", literal.field(1).jsonName());
-    assertEquals("u_r_l", literal.field(2).protoName());
+    assertEquals("the_url", literal.field(2).protoName());
+    assertEquals("theUrl", literal.field(2).jsonName());
+  }
+
+  @Test
+  public void testDeclareProtoNameJsonName() {
+    MessageMappers mappers = assertCompile(DeclareProtoNameJsonName.class);
+    MessageMapper<DeclareProtoNameJsonName> mm = mappers.of(DeclareProtoNameJsonName.class);
+    MessageType literal = mm.literal();
+    assertEquals("uno_dos", literal.field(1).protoName());
+    assertEquals("unoDos", literal.field(1).jsonName());
+    assertEquals("the_url", literal.field(2).protoName());
     assertEquals("the-url", literal.field(2).jsonName());
   }
 
