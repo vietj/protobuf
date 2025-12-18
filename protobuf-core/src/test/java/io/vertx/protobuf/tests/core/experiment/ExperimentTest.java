@@ -16,13 +16,23 @@
  */
 package io.vertx.protobuf.tests.core.experiment;
 
+import com.google.protobuf.Any;
 import io.vertx.protobuf.core.ProtoStream;
 import io.vertx.protobuf.core.ProtoVisitor;
 import io.vertx.protobuf.core.ProtobufReader;
 import io.vertx.protobuf.core.ProtobufWriter;
 import io.vertx.protobuf.core.json.ProtoJsonWriter;
 import io.vertx.protobuf.schema.*;
+import io.vertx.protobuf.schema.Field;
+import io.vertx.protobuf.well_known_types.*;
 import org.junit.Test;
+
+import java.io.InputStream;
+import java.net.URL;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class ExperimentTest {
 
@@ -68,7 +78,7 @@ public class ExperimentTest {
   }
 
   @Test
-  public void test() {
+  public void testSchema() {
 
     AddressBookSchema schema = new AddressBookSchema();
 
@@ -94,10 +104,28 @@ public class ExperimentTest {
         ProtobufReader.parse(schema.person, visitor, protobuf);
       }
     });
-
-    System.out.println(json);
-
-
   }
 
+  @Test
+  public void testLoadProtobufDescriptors() throws Exception {
+
+    // Let's create a serialized descriptor from "test.proto"
+    try (InputStream resource = ExperimentTest.class.getClassLoader().getResourceAsStream("descriptor.bin")) {
+      assertNotNull(resource);
+      byte[] bytes = resource.readAllBytes();
+      FileDescriptorSet descriptorSet = ProtoReader.readFileDescriptorSet(new ProtoStream() {
+        @Override
+        public void accept(ProtoVisitor visitor) {
+          ProtobufReader.parse(MessageLiteral.FileDescriptorSet, visitor, bytes);
+        }
+      });
+      assertEquals(1, descriptorSet.getFile().size());
+      List<DescriptorProto> descriptorProto = descriptorSet.getFile().get(0).getMessageType();
+      assertEquals(2, descriptorProto.size());
+      DescriptorProto type1 = descriptorProto.get(0);
+      DescriptorProto type2 = descriptorProto.get(1);
+      assertEquals("SimpleMessage", type1.getName());
+      assertEquals("Recursive", type2.getName());
+    }
+  }
 }
